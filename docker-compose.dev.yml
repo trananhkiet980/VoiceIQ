@@ -1,0 +1,53 @@
+services:
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: transcript-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: transcript-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT}:6379"
+    healthcheck:
+      test: ["CMD","redis-cli","ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  label-studio:
+    image: heartexlabs/label-studio:latest
+    container_name: transcript-labelstudio
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "${LABEL_STUDIO_PORT}:8080"
+    volumes:
+      - ./annotation/storage:/label-studio/data
+      - ${DATASET_ROOT}:/workspace
+
+volumes:
+  postgres_data:

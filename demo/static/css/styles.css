@@ -1,0 +1,11 @@
+.chat-bubble { max-width: 80%; padding: 12px; border-radius: 12px; margin-bottom: 8px; }
+        .customer { background-color: #f3f4f6; color: #1f2937; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .agent { background-color: #3b82f6; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .chat-container { display: flex; flex-direction: column; overflow-y: auto; height: 100%; }
+        /* Smooth transition for AI panel */
+        .ai-pulse { animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1); }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        
+        /* Expandable AI Cards */
+        .ai-card { max-height: 80px; overflow: hidden; transition: max-height 0.3s ease-in-out; }
+        .ai-card:hover { max-height: 250px; }

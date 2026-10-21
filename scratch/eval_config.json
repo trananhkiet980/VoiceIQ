@@ -1,0 +1,40 @@
+{
+    "output_report_path":  "scratch/report/prompt_optimization_report.md",
+    "tenant_id": "916180a7-0b43-5c08-b3c8-c738826880bb",
+    "call_ids": [
+                    "39af3700-58f0-5c55-9735-4eb3115a9416",
+                    "c1f52a58-6cb5-5bfa-aa0b-4de7f8e31038",
+                    "cf217112-e22f-5d94-90dd-0f0b5d575ddf",
+                    "93f6ea5b-4f74-50e8-a811-edfe0760e294",
+                    "72abd94f-91ce-550a-8aa7-ec13e91029ea",
+                    "3e51fad1-857a-5a28-ac06-595984d2bdc7",
+                    "ae978b83-f0cc-5115-b2cc-950bc7c0e7bc",
+                    "0e29f072-5772-57bd-bc22-43998df1b1b9",
+                    "154e5bf4-5c8e-53b7-8e0d-fbb0b3b87b51",
+                    "46b490ff-bd4d-5ee8-a23d-612d2d1a5955",
+                    "fe4693ac-352f-5764-86fc-d0f6386aaa2a",
+                    "68672b56-b180-5962-94b7-f1d2e5aa7936",
+                    "e528f6a9-6e8b-5110-801a-ca84cdd6d473",
+                    "f69a07d9-5a84-4032-8b52-21f0a4e1b501"
+                ],
+    "models_to_test":  [
+                           "qwen2.5:7b",
+                           "models/gemini-3.1-flash-lite",
+                           "gpt-4o"
+                       ],
+    "prompts_to_test":  [
+                            {
+                                "name":  "V1 - Đầy đủ (Văn xuôi)",
+                                "filepath":  "scratch/prompts/v1_full.txt"
+                            },
+                            {
+                                "name":  "V2 - Rút gọn (Cú pháp/Zero-shot)",
+                                "filepath":  "scratch/prompts/v2_short.txt"
+                            },
+                            {
+                                "name":  "V3 - Kèm ví dụ (Few-shot)",
+                                "filepath":  "scratch/prompts/v3_fewshot.txt"
+                            }
+                        ],
+    "input_dataset_path":  "scratch/sample_dataset.json"
+}

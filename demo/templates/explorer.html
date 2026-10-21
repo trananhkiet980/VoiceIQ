@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoiceIQ - Call Explorer</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                fontFamily: { sans: ['Inter', 'sans-serif'] },
+                extend: {
+                    colors: {
+                        primary: { 500: '#4F46E5', 600: '#4338CA', 700: '#3730A3' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        body { background-color: #F8FAFC; }
+        .glass-card { 
+            background: #ffffff; 
+            border: 1px solid #E2E8F0; 
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); 
+        }
+        .text-gradient { 
+            background: linear-gradient(90deg, #4F46E5, #0EA5E9); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+        }
+        ::-webkit-scrollbar { width: 6px; } 
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="text-slate-800 min-h-screen font-sans bg-[#F8FAFC] flex flex-col">
+    
+    <!-- Navbar -->
+    <nav class="bg-white px-6 py-3 flex justify-between items-center shadow-sm border-b border-slate-200 z-10 shrink-0">
+        <h1 class="text-2xl font-bold tracking-tight"><span class="text-gradient">VoiceIQ</span> Explorer</h1>
+        <div class="flex gap-2">
+            <a href="/demo" class="bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full font-bold transition-all shadow-sm">🎙️ Live Stream</a>
+            <button class="bg-blue-100 text-blue-700 border border-blue-300 px-3 py-1.5 rounded-full font-bold transition-all shadow-sm cursor-default">🔍 Call Explorer Dashboard</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="flex flex-col w-full flex-grow p-6 gap-6 h-[calc(100vh-64px)]">
+        
+        <!-- Thanh công cụ (Bộ Lọc) -->
+        <div class="w-full glass-card rounded-2xl p-4 shrink-0">
+            <!-- Hàng 1 -->
+            <div class="flex gap-4 mb-4">
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Workspace (Tenant)</label>
+                    <select id="tenant-id" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-primary-500 shadow-sm text-slate-700"></select>
+                </div>
+                
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Trạng thái phân tích</label>
+                    <select id="filter-status" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-primary-500 shadow-sm text-slate-700">
+                        <option value="all">Tất cả cuộc gọi</option>
+                        <option value="pending">Chưa phân tích (Pending)</option>
+                        <option value="processed">Đã phân tích (Processed)</option>
+                    </select>
+                </div>
+
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">QA Score</label>
+                    <select id="filter-qa" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-primary-500 shadow-sm text-slate-700">
+                        <option value="all">Tất cả điểm</option>
+                        <option value="high">>= 80 (Tốt)</option>
+                        <option value="medium">50 - 79 (Khá)</option>
+                        <option value="low">< 50 (Kém)</option>
+                    </select>
+                </div>
+
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Mức độ khẩn cấp (NBA)</label>
+                    <select id="filter-nba" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-primary-500 shadow-sm text-slate-700">
+                        <option value="all">Tất cả mức độ</option>
+                        <option value="Xử lý ngay lập tức">Xử lý ngay lập tức</option>
+                        <option value="Đã xử lý trong cuộc gọi">Đã xử lý trong cuộc gọi</option>
+                        <option value="Xử lý trong thời gian nhất định">Xử lý trong thời gian nhất định</option>
+                        <option value="Xử lý ngoài giờ hành chính">Xử lý ngoài giờ hành chính</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Hàng 2 -->
+            <div class="flex gap-4 items-end">
+                <div class="flex-1 relative">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Cần xử lý trước</label>
+                    <div class="relative">
+                        <input type="date" id="filter-deadline" class="w-full bg-white border border-slate-300 rounded-lg p-2 pr-8 text-sm outline-none focus:border-primary-500 shadow-sm text-slate-700">
+                        <button onclick="document.getElementById('filter-deadline').value=''; loadExplorerCalls()" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500" title="Xóa ngày">
+                            ✖
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Cảm xúc KH</label>
+                    <select id="filter-sentiment" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-primary-500 shadow-sm text-slate-700">
+                        <option value="all">Tất cả</option>
+                        <option value="positive">Tích cực</option>
+                        <option value="neutral">Bình thường</option>
+                        <option value="negative">Tiêu cực</option>
+                    </select>
+                </div>
+
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Căng thẳng</label>
+                    <select id="filter-escalation" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-primary-500 shadow-sm text-slate-700">
+                        <option value="all">Tất cả</option>
+                        <option value="none">Bình thường (None)</option>
+                        <option value="medium">Vừa (Medium)</option>
+                        <option value="high">Nghiêm trọng (High)</option>
+                    </select>
+                </div>
+
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Độc hại (Toxicity)</label>
+                    <select id="filter-toxicity" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-primary-500 shadow-sm text-slate-700">
+                        <option value="all">Tất cả</option>
+                        <option value="none">Không có</option>
+                        <option value="toxic">Có từ ngữ độc hại</option>
+                    </select>
+                </div>
+                
+                <button onclick="loadExplorerCalls()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-all h-[38px] min-w-[120px]">
+                    Tìm kiếm
+                </button>
+            </div>
+        </div>
+
+        <!-- Layout 2 Cột -->
+        <div class="flex gap-6 flex-grow overflow-hidden">
+            
+            <!-- Cột Trái: Bảng danh sách -->
+            <div class="flex-1 min-w-0 glass-card rounded-2xl flex flex-col h-full overflow-hidden shrink-0">
+                <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
+                    <div class="flex items-center gap-4">
+                        <h2 class="font-bold text-slate-800 text-sm uppercase tracking-widest">Danh sách Cuộc gọi</h2>
+                        <div class="flex gap-1 border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+                            <button id="btn-sort-created" onclick="toggleSort('created_at')" class="px-3 py-1 text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors flex items-center gap-1" title="Sắp xếp theo thời gian tạo">
+                                🕒 <span id="icon-sort-created">↑</span>
+                            </button>
+                            <button id="btn-sort-analysis" onclick="toggleSort('analysis_created_at')" class="px-3 py-1 text-xs font-bold text-slate-500 hover:bg-slate-50 transition-colors flex items-center gap-1" title="Sắp xếp theo thời gian phân tích">
+                                🤖 <span id="icon-sort-analysis">-</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="btn-batch-reset" onclick="startBatchReset()" class="bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-lg font-bold shadow-sm text-xs disabled:opacity-50" disabled>
+                            ↺ Hủy
+                        </button>
+                        <button id="btn-batch-analyze" onclick="openAnalyzeConfigModal()" class="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white px-3 py-1.5 rounded-lg font-bold shadow-md text-xs disabled:opacity-50" disabled>
+                            ▶ Phân tích
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="overflow-y-auto flex-grow custom-scrollbar">
+                    <table class="w-full text-sm text-left border-collapse">
+                        <thead class="bg-white sticky top-0 shadow-sm z-10">
+                            <tr>
+                                <th class="px-4 py-3 w-10 text-center"><input type="checkbox" id="check-all" class="rounded border-slate-300 text-primary-600"></th>
+                                <th class="px-4 py-3 font-bold text-slate-600">Call ID</th>
+                                <th class="px-4 py-3 font-bold text-slate-600 text-center">QA Score</th>
+                                <th class="px-4 py-3 font-bold text-slate-600">Ý định / Hành động tiếp theo</th>
+                                <th class="px-4 py-3 font-bold text-slate-600 text-right">Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody id="calls-tbody" class="divide-y divide-slate-100">
+                            <tr><td colspan="5" class="p-8 text-center text-slate-400 italic">Đang tải dữ liệu...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Cột Phải: Preview Kết quả -->
+            <div class="flex-1 min-w-0 glass-card rounded-2xl flex flex-col h-full shrink-0">
+                <div class="p-4 border-b border-slate-200 flex justify-between items-center shrink-0">
+                    <div>
+                        <div id="preview-date" class="text-[10px] text-slate-400 font-mono mb-0.5 hidden"></div>
+                        <h2 class="font-bold text-slate-800 text-sm uppercase tracking-widest" id="preview-title">Chi tiết Kết quả</h2>
+                    </div>
+                    
+                    <!-- Toggle Mode -->
+                    <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200 hidden" id="preview-toggles">
+                        <button id="btn-mode-summary" onclick="switchPreviewMode('summary')" class="px-3 py-1 text-xs font-bold rounded-md bg-white text-primary-600 shadow-sm transition-all">Tóm tắt</button>
+                        <button id="btn-mode-transcript" onclick="switchPreviewMode('transcript')" class="px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all">Transcript</button>
+                        <button id="btn-mode-json" onclick="switchPreviewMode('json')" class="px-3 py-1 text-xs font-bold rounded-md text-slate-500 hover:text-slate-700 transition-all">JSON LLM</button>
+                    </div>
+                </div>
+                
+                <div class="flex-grow overflow-y-auto custom-scrollbar p-5 bg-slate-50 relative">
+                    
+                    <!-- Placeholder khi chưa chọn -->
+                    <div id="preview-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
+                        <span class="text-5xl opacity-30 mb-4">📄</span>
+                        <p class="text-sm">Chọn một cuộc gọi để xem chi tiết</p>
+                    </div>
+
+                    <!-- Chế độ 1: Summary -->
+                    <div id="preview-summary" class="hidden flex-col gap-5">
+                        <!-- Warning chưa phân tích -->
+                        <div id="not-analyzed-warning" class="hidden bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-xl text-center">
+                            <span class="text-2xl block mb-2">⏳</span>
+                            <p class="font-bold text-sm">Cuộc gọi này chưa được phân tích!</p>
+                            <p class="text-xs mt-1">Hãy tích chọn cuộc gọi và nhấn nút Phân tích LLM_Only bên bảng.</p>
+                        </div>
+
+                        <!-- Điểm QA và Tóm tắt -->
+                        <div id="summary-content" class="hidden flex-col gap-4">
+                            <div class="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm text-center">
+                                    <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Điểm QA</span>
+                                    <span class="text-2xl font-bold text-emerald-600" id="preview-qa">--/100</span>
+                                    <button onclick="showQADetails()" class="mt-2 text-xs text-primary-500 hover:text-primary-700 underline block w-full" id="btn-qa-details" style="display: none;">Xem chi tiết</button>
+                                </div>
+                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm text-center flex flex-col justify-center items-center">
+                                    <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Thái độ Tổng</span>
+                                    <span class="text-xs font-bold text-slate-600 mt-2" id="preview-sentiment-overall">--</span>
+                                </div>
+                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm text-center flex flex-col justify-center items-center">
+                                    <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Thái độ KH</span>
+                                    <span class="text-xs font-bold text-slate-600 mt-2" id="preview-sentiment-customer">--</span>
+                                </div>
+                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm text-center flex flex-col justify-center items-center">
+                                    <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Thái độ Agent</span>
+                                    <span class="text-xs font-bold text-slate-600 mt-2" id="preview-sentiment-agent">--</span>
+                                </div>
+                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm text-center flex flex-col justify-center items-center">
+                                    <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Cảm xúc Tổng</span>
+                                    <span class="text-xs font-bold text-slate-600 mt-2" id="preview-emotion-overall">--</span>
+                                </div>
+                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm text-center flex flex-col justify-center items-center">
+                                    <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Cảm xúc KH</span>
+                                    <span class="text-xs font-bold text-slate-600 mt-2" id="preview-emotion-customer">--</span>
+                                </div>
+                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm text-center flex flex-col justify-center items-center">
+                                    <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Cảm xúc Agent</span>
+                                    <span class="text-xs font-bold text-slate-600 mt-2" id="preview-emotion-agent">--</span>
+                                </div>
+                            </div>
+
+                            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                                <h3 class="font-bold text-slate-700 mb-3 text-sm flex items-center gap-2">📝 Tóm tắt cuộc gọi</h3>
+                                <div id="preview-summary-text" class="prose prose-sm prose-slate max-w-none text-[13px]">
+                                    Đang tải...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chế độ 2: Transcript -->
+                    <div id="preview-transcript" class="hidden flex-col gap-4 h-full">
+                        <div class="bg-white rounded-xl shadow-inner border border-slate-200 p-4 flex-grow overflow-y-auto custom-scrollbar" id="preview-chat-box">
+                            <!-- Chat bubbles sẽ render ở đây -->
+                        </div>
+                    </div>
+                    
+                    <!-- Chế độ 3: JSON -->
+                    <div id="preview-json" class="hidden h-full flex-col">
+                        <div class="bg-slate-800 text-slate-300 rounded-xl shadow-inner border border-slate-700 p-4 flex-grow overflow-y-auto custom-scrollbar">
+                            <pre><code id="preview-json-content" class="text-xs"></code></pre>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Dashboard Section -->
+    <div class="flex flex-col w-full p-6 gap-6 bg-white border-t border-slate-200 mt-4 mb-10 shrink-0">
+        <h2 class="text-xl font-bold text-slate-800 tracking-tight">📊 Analytics Dashboard (Prompt Suitability)</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="glass-card p-4 rounded-xl flex flex-col items-center">
+                <h3 class="font-bold text-sm text-center mb-2">Phân bố QA Score</h3>
+                <div class="w-full max-w-[250px]"><canvas id="chart-qa"></canvas></div>
+            </div>
+            <div class="glass-card p-4 rounded-xl flex flex-col items-center">
+                <h3 class="font-bold text-sm text-center mb-2">Phân bố Customer Sentiment</h3>
+                <div class="w-full max-w-[250px]"><canvas id="chart-sentiment"></canvas></div>
+            </div>
+            <div class="glass-card p-4 rounded-xl flex flex-col items-center">
+                <h3 class="font-bold text-sm text-center mb-2">Phân bố Escalation Level</h3>
+                <div class="w-full max-w-[250px]"><canvas id="chart-escalation"></canvas></div>
+            </div>
+            <div class="glass-card p-4 rounded-xl flex flex-col items-center">
+                <h3 class="font-bold text-sm text-center mb-2">Phân bố Toxicity</h3>
+                <div class="w-full max-w-[250px]"><canvas id="chart-toxicity"></canvas></div>
+            </div>
+            <div class="glass-card p-4 rounded-xl flex flex-col">
+                <h3 class="font-bold text-sm text-center mb-2">Phân bố Main Intent (Top 5)</h3>
+                <div class="w-full grow flex items-center"><canvas id="chart-intent"></canvas></div>
+            </div>
+            <div class="glass-card p-4 rounded-xl flex flex-col">
+                <h3 class="font-bold text-sm text-center mb-2">Phân bố Mức độ khẩn cấp (Priority)</h3>
+                <div class="w-full grow flex items-center"><canvas id="chart-nba"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Phân tích Loading -->
+    <div id="analysis-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4" id="analysis-spinner"></div>
+            <h3 class="text-lg font-bold text-slate-800 mb-2" id="analysis-title">Đang phân tích LLM_Only</h3>
+            <p class="text-sm text-slate-500 mb-4" id="analysis-progress">Đang xử lý 1/5 cuộc gọi...</p>
+            
+            <div class="w-full bg-slate-100 rounded-full h-2 mb-4 overflow-hidden">
+                <div id="analysis-bar" class="bg-primary-500 h-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+
+            <div id="analysis-logs" class="text-left bg-slate-900 text-emerald-400 text-xs font-mono p-3 rounded-xl h-40 overflow-y-auto mb-6 custom-scrollbar whitespace-pre-wrap"></div>
+
+            <button id="btn-analysis-close" onclick="closeAnalysisModal()" class="hidden w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 px-4 rounded-xl">Hoàn tất (Tải lại trang)</button>
+        </div>
+    </div>
+
+    <!-- Modal QA Details -->
+    <div id="qa-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-2xl w-full max-h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">Chi tiết chấm điểm QA</h3>
+                <button onclick="closeQADetails()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+            </div>
+            <div id="qa-modal-content" class="overflow-y-auto flex-grow custom-scrollbar space-y-4">
+                <!-- Data will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cấu hình Phân tích -->
+    <div id="analyze-config-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full flex flex-col">
+            <h3 class="text-lg font-bold text-slate-800 mb-4">Cấu hình Phân tích & Lưu Database</h3>
+            
+            <label class="block text-sm font-bold text-slate-600 mb-2">Chọn Prompt:</label>
+            <select id="config-prompt" class="w-full border border-slate-300 rounded p-2 mb-4 text-sm">
+                <option value="PROMPT_1">PROMPT 1 (v1_full.txt)</option>
+                <option value="PROMPT_2" selected>(Recommended) PROMPT 2 (v2_short.txt)</option>
+                <option value="PROMPT_3">PROMPT 3 (v3_fewshot.txt)</option>
+                <option value="LLM_ONLY">Mặc định (LLM_ONLY)</option>
+            </select>
+            
+            <label class="block text-sm font-bold text-slate-600 mb-2">Chọn Model:</label>
+            <select id="config-model" class="w-full border border-slate-300 rounded p-2 mb-6 text-sm">
+                <option value="models/gemini-3.1-flash-lite">(Recommended) models/gemini-3.1-flash-lite</option>
+                <option value="gpt-4o">gpt-4o</option>
+                <option value="qwen2.5:32b">qwen2.5:32b</option>
+            </select>
+            
+            <div class="flex justify-end gap-3 mt-auto">
+                <button onclick="closeAnalyzeConfigModal()" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-600">Hủy</button>
+                <button onclick="startBatchAnalysis()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg font-bold">Bắt đầu Phân tích</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/explorer.js"></script>
+</body>
+</html>

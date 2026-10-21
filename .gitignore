@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual env
+.venv/
+venv/
+
+# Environment
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Models
+models/
+*.h5
+*.pb
+*.bin
+*.safetensors
+*.pkl
+*.onnx
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+# Documents (not project code)
+# .documents/
+# notebooks/
+annotation/storage/
+datasets/raw/
+datasets/sanitized/
+database/
+experiments/datasets
+.experiments/
+experiments/
+.docs/2772026
+.data/
+.ai/
+
+.report/
+.meeting/
+.database/
+
