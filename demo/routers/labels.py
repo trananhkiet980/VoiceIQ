@@ -1,6 +1,7 @@
-﻿from typing import Any, Literal
+from typing import Any, Literal
 
 from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 
 from voiceiq.app.container import Container
 
@@ -10,7 +11,7 @@ router = APIRouter(prefix="/api/v1/demo", tags=["Labels"])
 @router.get("/all-labels")
 async def get_all_labels(
     request: Request, label_format: Literal["FULL", "ONLY_LABEL", "ONLY_DESC"] = "FULL"
-) -> list[dict[str, Any]]:
+) -> Any:
     container: Container = request.app.state.container
     session_factory = container._session_factory  # pyright: ignore[reportPrivateUsage]
     assert session_factory is not None
@@ -18,15 +19,25 @@ async def get_all_labels(
 
     from voiceiq.infrastructure.db.models import IntentTaxonomyModel, TopicRegistryModel
 
-    async with session_factory() as session:
-        result_topics = await session.execute(
-            select(TopicRegistryModel).where(TopicRegistryModel.status == "active")
+    try:
+        async with session_factory() as session:
+            result_topics = await session.execute(
+                select(TopicRegistryModel).where(TopicRegistryModel.status == "active")
+            )
+            all_topics = result_topics.scalars().all()
+            result_intents = await session.execute(
+                select(IntentTaxonomyModel).where(IntentTaxonomyModel.status == "active")
+            )
+            all_intents = result_intents.scalars().all()
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": "DATABASE_NOT_CONNECTED",
+                "message": f"Chưa kết nối được cơ sở dữ liệu PostgreSQL (Port 5432): {str(e)}",
+                "hint": "Vui lòng khởi động PostgreSQL hoặc Docker container để sử dụng tính năng này."
+            },
         )
-        all_topics = result_topics.scalars().all()
-        result_intents = await session.execute(
-            select(IntentTaxonomyModel).where(IntentTaxonomyModel.status == "active")
-        )
-        all_intents = result_intents.scalars().all()
 
     grouped_data: dict[str, dict[str, Any]] = {}
     for t in all_topics:
